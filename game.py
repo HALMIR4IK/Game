@@ -1,5 +1,6 @@
-import pygame
 import random
+
+import pygame
 
 WIDTH = 480
 HEIGHT = 600
@@ -17,7 +18,7 @@ YELLOW = (255, 255, 0)
 pygame.init()
 pygame.mixer.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Shmup!")
+pygame.display.set_caption("Игра")
 clock = pygame.time.Clock()
 
 
@@ -45,10 +46,34 @@ class Player(pygame.sprite.Sprite):
             self.rect.left = 0
 
 
+class Mob(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.Surface((30, 40))
+        self.image.fill(RED)
+        self.rect = self.image.get_rect()
+        self.rect.x = random.randrange(WIDTH - self.rect.width)
+        self.rect.y = random.randrange(-100, -40)
+        self.speedy = random.randrange(1, 8)
+        self.speedx = random.randrange(-3, 3)
+
+    def update(self):
+        self.rect.x += self.speedx
+        self.rect.y += self.speedy
+        if self.rect.top > HEIGHT + 10 or self.rect.left < -25 or self.rect.right > WIDTH + 20:
+            self.rect.x = random.randrange(WIDTH - self.rect.width)
+            self.rect.y = random.randrange(-100, -40)
+            self.speedy = random.randrange(1, 8)
+
+
 all_sprites = pygame.sprite.Group()
+mobs = pygame.sprite.Group()
 player = Player()
 all_sprites.add(player)
-
+for i in range(8):
+    m = Mob()
+    all_sprites.add(m)
+    mobs.add(m)
 # Цикл игры
 running = True
 while running:
