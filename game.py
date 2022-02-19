@@ -91,6 +91,7 @@ while running:
     # Рендеринг
     screen.fill(BLACK)
     all_sprites.draw(screen)
+    # После отрисовки всего, переворачиваем экран
     pygame.display.flip()
 
 pygame.quit()
