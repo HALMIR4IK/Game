@@ -36,7 +36,7 @@ class Player(pygame.sprite.Sprite):
         keystate = pygame.key.get_pressed()
         if keystate[pygame.K_LEFT] or keystate[pygame.K_a]:
             self.speedx = -8
-        if keystate[pygame.K_LEFT] or keystate[pygame.K_d]:
+        if keystate[pygame.K_RIGHT] or keystate[pygame.K_d]:
             self.speedx = 8
         self.rect.x += self.speedx
         if self.rect.right > WIDTH:
