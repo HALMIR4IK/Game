@@ -160,5 +160,6 @@ while running:
     all_sprites.draw(screen)
     # После отрисовки всего, переворачиваем экр
     pygame.display.flip()
+    
 
 pygame.quit()
