@@ -1,7 +1,6 @@
 import random
 from os import path
 
-
 import pygame
 
 img_dir = path.join(path.dirname(__file__), 'img')
@@ -23,6 +22,16 @@ pygame.mixer.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Игра")
 clock = pygame.time.Clock()
+
+font_name = pygame.font.match_font('arial')
+
+
+def draw_text(surf, text, size, x, y):
+    font = pygame.font.Font(font_name, size)
+    text_surface = font.render(text, True, WHITE)
+    text_rect = text_surface.get_rect()
+    text_rect.midtop = (x, y)
+    surf.blit(text_surface, text_rect)
 
 
 class Player(pygame.sprite.Sprite):
@@ -129,6 +138,8 @@ for i in range(8):
     m = Mob()
     all_sprites.add(m)
     mobs.add(m)
+
+score = 0
 # Цикл игры
 running = True
 while running:
@@ -147,6 +158,7 @@ while running:
     all_sprites.update()
     hits = pygame.sprite.groupcollide(mobs, bullets, True, True)
     for hit in hits:
+        score += 50 - hit.radius
         m = Mob()
         all_sprites.add(m)
         mobs.add(m)
@@ -159,6 +171,7 @@ while running:
     screen.fill(BLACK)
     screen.blit(background, background_rect)
     all_sprites.draw(screen)
+    draw_text(screen, str(score), 18, WIDTH / 2, 10)
     # После отрисовки всего, переворачиваем экр
     pygame.display.flip()
 
