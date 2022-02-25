@@ -1,7 +1,14 @@
 import random
+import sqlite3
 from os import path
 
 import pygame
+
+# Подключение к БД
+con = sqlite3.connect("records_bd.sqlite")
+
+# Создание курсора
+cur = con.cursor()
 
 img_dir = path.join(path.dirname(__file__), 'img')
 snd_dir = path.join(path.dirname(__file__), 'snd')
@@ -64,11 +71,15 @@ def draw_lives(surf, x, y, lives, img):
 
 
 def show_go_screen():
+    result = cur.execute("""SELECT MAX(score) FROM records""").fetchone()
+    result = str(result[0])
+    record = f'Record: {result}'
     screen.blit(background, background_rect)
     draw_text(screen, "KosmoStars!", 64, WIDTH / 2, HEIGHT / 4)
     draw_text(screen, "Arrow keys move, Space to fire", 22,
               WIDTH / 2, HEIGHT / 2)
     draw_text(screen, "Press a key to begin", 18, WIDTH / 2, HEIGHT * 3 / 4)
+    draw_text(screen, record, 40, WIDTH / 2, HEIGHT * 3.5 / 4)
     pygame.display.flip()
     waiting = True
     while waiting:
@@ -374,6 +385,10 @@ while running:
 
     # Если игрок умер, игра окончена
     if player.lives == 0 and not death_explosion.alive():
+        cur.execute(f"""
+                            INSERT INTO records(score) VALUES({score})
+                            """)
+        con.commit()
         game_over = True
 
     # Рендеринг
