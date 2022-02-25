@@ -53,6 +53,7 @@ def draw_shield_bar(surf, x, y, pct):
     pygame.draw.rect(surf, GREEN, fill_rect)
     pygame.draw.rect(surf, WHITE, outline_rect, 2)
 
+
 def draw_lives(surf, x, y, lives, img):
     for i in range(lives):
         img_rect = img.get_rect()
@@ -79,16 +80,20 @@ class Player(pygame.sprite.Sprite):
         self.hide_timer = pygame.time.get_ticks()
 
     def update(self):
+        # показать, если скрыто
         if self.hidden and pygame.time.get_ticks() - self.hide_timer > 1000:
             self.hidden = False
             self.rect.centerx = WIDTH / 2
             self.rect.bottom = HEIGHT - 10
+
         self.speedx = 0
         keystate = pygame.key.get_pressed()
         if keystate[pygame.K_LEFT] or keystate[pygame.K_a]:
             self.speedx = -8
         if keystate[pygame.K_RIGHT] or keystate[pygame.K_d]:
             self.speedx = 8
+        if keystate[pygame.K_SPACE]:
+            self.shoot()
         self.rect.x += self.speedx
         if self.rect.right > WIDTH:
             self.rect.right = WIDTH
@@ -121,7 +126,7 @@ class Mob(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.radius = int(self.rect.width * .85 / 2)
         self.rect.x = random.randrange(WIDTH - self.rect.width)
-        self.rect.y = random.randrange(-100, -40)
+        self.rect.y = random.randrange(-150, -100)
         self.speedy = random.randrange(1, 8)
         self.speedx = random.randrange(-3, 3)
         self.rot = 0
@@ -165,6 +170,24 @@ class Bullet(pygame.sprite.Sprite):
         if self.rect.bottom < 0:
             self.kill()
 
+
+class Pow(pygame.sprite.Sprite):
+    def __init__(self, center):
+        pygame.sprite.Sprite.__init__(self)
+        self.type = random.choice(['shield', 'gun'])
+        self.image = powerup_images[self.type]
+        self.image.set_colorkey(BLACK)
+        self.rect = self.image.get_rect()
+        self.rect.center = center
+        self.speedy = 2
+
+    def update(self):
+        self.rect.y += self.speedy
+        # убить, если он сдвинется с нижней части экрана
+        if self.rect.top > HEIGHT:
+            self.kill()
+
+
 class Explosion(pygame.sprite.Sprite):
     def __init__(self, center, size):
         pygame.sprite.Sprite.__init__(self)
@@ -188,6 +211,7 @@ class Explosion(pygame.sprite.Sprite):
                 self.image = explosion_anim[self.size][self.frame]
                 self.rect = self.image.get_rect()
                 self.rect.center = center
+
 
 
 
@@ -221,6 +245,10 @@ for i in range(9):
     img.set_colorkey(BLACK)
     explosion_anim['player'].append(img)
 
+powerup_images = {}
+powerup_images['shield'] = pygame.image.load(path.join(img_dir, 'shield_gold.png')).convert()
+powerup_images['gun'] = pygame.image.load(path.join(img_dir, 'bolt_gold.png')).convert()
+
 shoot_sound = pygame.mixer.Sound(path.join(snd_dir, 'pew.wav'))
 expl_sounds = []
 for snd in ['expl3.wav', 'expl6.wav']:
@@ -232,6 +260,7 @@ all_sprites = pygame.sprite.Group()
 mobs = pygame.sprite.Group()
 bullets = pygame.sprite.Group()
 player = Player()
+powerups = pygame.sprite.Group()
 all_sprites.add(player)
 for i in range(8):
     newmob()
@@ -248,18 +277,21 @@ while running:
         # проверка для закрытия окна
         if event.type == pygame.QUIT:
             running = False
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_SPACE:
-                player.shoot()
 
     # Обновление
     all_sprites.update()
+
+    # проверьте, не попала ли пуля в моб
     hits = pygame.sprite.groupcollide(mobs, bullets, True, True)
     for hit in hits:
         score += 50 - hit.radius
         random.choice(expl_sounds).play()
         expl = Explosion(hit.rect.center, 'lg')
         all_sprites.add(expl)
+        if random.random() > 0.9:
+            pow = Pow(hit.rect.center)
+            all_sprites.add(pow)
+            powerups.add(pow)
         newmob()
 
     #  Проверка, не ударил ли моб игрока
@@ -275,6 +307,16 @@ while running:
             player.hide()
             player.lives -= 1
             player.shield = 100
+
+    # Проверка столкновений игрока и улучшения
+    hits = pygame.sprite.spritecollide(player, powerups, True)
+    for hit in hits:
+        if hit.type == 'shield':
+            player.shield += random.randrange(10, 30)
+            if player.shield >= 100:
+                player.shield = 100
+        if hit.type == 'gun':
+            pass
 
     # Если игрок умер, игра окончена
     if player.lives == 0 and not death_explosion.alive():
