@@ -1,15 +1,19 @@
+import datetime
 import random
 import sqlite3
+import time
 from os import path
 
 import pygame
+from loguru import logger
+
+logger.add('debug.log', format='{time} {level} {message}', level='DEBUG')
 
 # Подключение к БД
 con = sqlite3.connect("records_bd.sqlite")
 
 # Создание курсора
 cur = con.cursor()
-
 img_dir = path.join(path.dirname(__file__), 'img')
 snd_dir = path.join(path.dirname(__file__), 'snd')
 
@@ -36,6 +40,7 @@ clock = pygame.time.Clock()
 font_name = pygame.font.match_font('arial')
 
 
+@logger.catch()
 def draw_text(surf, text, size, x, y):
     font = pygame.font.Font(font_name, size)
     text_surface = font.render(text, True, WHITE)
@@ -44,12 +49,14 @@ def draw_text(surf, text, size, x, y):
     surf.blit(text_surface, text_rect)
 
 
+@logger.catch()
 def newmob():
     m = Mob()
     all_sprites.add(m)
     mobs.add(m)
 
 
+@logger.catch()
 def draw_shield_bar(surf, x, y, pct):
     if pct < 0:
         pct = 0
@@ -62,6 +69,7 @@ def draw_shield_bar(surf, x, y, pct):
     pygame.draw.rect(surf, WHITE, outline_rect, 2)
 
 
+@logger.catch()
 def draw_lives(surf, x, y, lives, img):
     for i in range(lives):
         img_rect = img.get_rect()
@@ -70,7 +78,9 @@ def draw_lives(surf, x, y, lives, img):
         surf.blit(img, img_rect)
 
 
+@logger.catch()
 def show_go_screen():
+    global running
     result = cur.execute("""SELECT MAX(score) FROM records""").fetchone()
     result = str(result[0])
     record = f'Record: {result}'
@@ -86,11 +96,13 @@ def show_go_screen():
         clock.tick(FPS)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit()
+                waiting = False
+                running = False
             if event.type == pygame.KEYUP:
                 waiting = False
 
 
+@logger.catch()
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
@@ -166,6 +178,7 @@ class Player(pygame.sprite.Sprite):
         self.rect.center = (WIDTH / 2, HEIGHT + 200)
 
 
+@logger.catch()
 class Mob(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
@@ -204,6 +217,7 @@ class Mob(pygame.sprite.Sprite):
             self.speedy = random.randrange(1, 8)
 
 
+@logger.catch()
 class Bullet(pygame.sprite.Sprite):
     def __init__(self, x, y):
         pygame.sprite.Sprite.__init__(self)
@@ -221,6 +235,7 @@ class Bullet(pygame.sprite.Sprite):
             self.kill()
 
 
+@logger.catch()
 class Pow(pygame.sprite.Sprite):
     def __init__(self, center):
         pygame.sprite.Sprite.__init__(self)
@@ -238,6 +253,7 @@ class Pow(pygame.sprite.Sprite):
             self.kill()
 
 
+@logger.catch()
 class Explosion(pygame.sprite.Sprite):
     def __init__(self, center, size):
         pygame.sprite.Sprite.__init__(self)
@@ -323,6 +339,7 @@ running = True
 while running:
     if game_over:
         show_go_screen()
+        start_time = time.time()
         game_over = False
         all_sprites = pygame.sprite.Group()
         mobs = pygame.sprite.Group()
@@ -385,8 +402,18 @@ while running:
 
     # Если игрок умер, игра окончена
     if player.lives == 0 and not death_explosion.alive():
+        date = datetime.datetime.now()
+        year = date.year
+        day = date.day
+        month = date.month
+        timebd = str(str(date.hour) + str(date.minute) + str(date.second))
+        now_time = time.time()
+        run_time = int(now_time - start_time)
+
+        print(run_time)
         cur.execute(f"""
-                            INSERT INTO records(score) VALUES({score})
+                            INSERT INTO records(score, year, day, month, time, run_time)
+                            VALUES({score}, {year}, {day}, {month}, {timebd}, {run_time})
                             """)
         con.commit()
         game_over = True
