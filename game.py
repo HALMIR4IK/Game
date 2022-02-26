@@ -410,7 +410,6 @@ while running:
         now_time = time.time()
         run_time = int(now_time - start_time)
 
-        print(run_time)
         cur.execute(f"""
                             INSERT INTO records(score, year, day, month, time, run_time)
                             VALUES({score}, {year}, {day}, {month}, {timebd}, {run_time})
