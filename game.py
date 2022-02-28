@@ -427,5 +427,6 @@ while running:
                player_mini_img)
     # После отрисовки всего, переворачиваем экран
     pygame.display.flip()
+    
 
 pygame.quit()
